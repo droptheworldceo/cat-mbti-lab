@@ -26,6 +26,15 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // 화면(index.html)이 이 함수를 쓰지 않는 동안은 꺼 둔다(2026-10-22 보안 점검).
+  // 다시 쓰려면 Supabase Secrets에 ANALYZE_ENABLED=true를 넣고, 호출 제한·입력 검사를 먼저 붙인다.
+  if (Deno.env.get("ANALYZE_ENABLED") !== "true") {
+    return new Response(
+      JSON.stringify({ success: false, error: "analyze-cat is disabled" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 }
+    );
+  }
+
   try {
     const payload: AnalyzeRequest = await req.json();
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");

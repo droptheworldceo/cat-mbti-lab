@@ -9,7 +9,7 @@
     "supabase:init": "supabase init",
     "supabase:start": "supabase start",
     "db:push": "supabase db push",
-    "functions:deploy": "supabase functions deploy analyze-cat --no-verify-jwt"
+    "functions:deploy": "supabase functions deploy analyze-cat"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
