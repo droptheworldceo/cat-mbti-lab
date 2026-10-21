@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MCTI 냥BTI 연구소 — 내 고양이 성향 유형 테스트 (My Cat's Type Indicator)</title>
   <meta name="description" content="MCTI(My Cat's Type Indicator) — 사진·행동 설문·묘종으로 보는 우리 고양이 성향 유형과 집사 케미 테스트. by teamSKY" />
+  <link rel="canonical" href="https://mcti.kr/" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐱</text></svg>" />
   <link rel="stylesheet" href="/src/style.css" />
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
@@ -2390,7 +2391,7 @@
         `• 한줄 속마음: ${res.typeInfo.quote}\n` +
         `• 집사(${res.butlerCode})와의 케미: ${res.chemScore}점 (${res.chemTag})\n` +
         `• 사냥놀이 처방: ${res.typeInfo.playTip}\n` +
-        `👉 우리 고양이도 해보기: https://cat-mbti-lab.vercel.app`;
+        `👉 우리 고양이도 해보기: https://mcti.kr`;
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(summaryText).then(() => {
