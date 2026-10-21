@@ -47,7 +47,7 @@ cat-mbti-lab/
    - `SUPABASE_SERVICE_ROLE_KEY`: Project API keys의 service_role secret
 3. 터미널에서 Edge Function을 배포합니다:
    ```bash
-   npx supabase functions deploy analyze-cat --no-verify-jwt
+   npx supabase functions deploy analyze-cat
    ```
 
 ### Step 3. GitHub 레포지토리 푸시 & Vercel 배포
