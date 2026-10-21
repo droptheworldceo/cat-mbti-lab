@@ -780,7 +780,7 @@
               </div>
 
               <p class="text-[10px] text-slate-400 leading-tight">
-                * 사진 기반 체중 추측과 안구 색상·투명도 스크리닝은 캔버스 비전 피처와 묘종 표준치를 결합한 일상 참고 지표이며, 정밀 진단은 수의사 진료를 권장합니다.
+                * 냥BTI는 재미로 보는 성향 테스트이며 수의학적 진단이 아닙니다. 사진 기반 체중 추측과 안구 색상·투명도 스크리닝은 캔버스 비전 피처와 묘종 표준치를 결합한 일상 참고 지표이며, 정밀 진단은 수의사 진료를 권장합니다.
               </p>
             </div>
           </div>
@@ -1441,6 +1441,23 @@
       ctx.restore();
     }
 
+    // 샘플 고양이 애니메이션 — 1단계에 있는 동안만 돈다(다른 단계에서 돌아오면 다시 시작)
+    function startSampleAnimation(sampleKey) {
+      const sampleCanvas = document.getElementById('samplePreviewCanvas');
+      if (sampleAnimationId) cancelAnimationFrame(sampleAnimationId);
+      let tick = 0;
+      function animateLoop() {
+        tick++;
+        drawSampleCatOnCanvas(sampleCanvas, sampleKey, tick);
+        if (state.currentStep === 1 && state.mediaSource === 'sample_' + sampleKey) {
+          sampleAnimationId = requestAnimationFrame(animateLoop);
+        } else {
+          sampleAnimationId = null;
+        }
+      }
+      animateLoop();
+    }
+
     function selectSampleCat(sampleKey) {
       const sample = SAMPLE_CATS[sampleKey];
       if (!sample) return;
@@ -1488,16 +1505,8 @@
       });
 
       // Animate the sample canvas smoothly
-      if (sampleAnimationId) cancelAnimationFrame(sampleAnimationId);
-      let tick = 0;
-      function animateLoop() {
-        tick++;
-        drawSampleCatOnCanvas(sampleCanvas, sampleKey, tick);
-        if (state.currentStep === 1 && state.mediaSource.startsWith('sample_')) {
-          sampleAnimationId = requestAnimationFrame(animateLoop);
-        }
-      }
-      animateLoop();
+      document.getElementById('previewVideoEl').pause();
+      startSampleAnimation(sampleKey);
 
       // Sync Step 2 inputs
       document.getElementById('inputCatName').value = sample.name;
@@ -1672,6 +1681,16 @@
       }
     }
 
+    // 브라우저가 열지 못하는 파일(예: PC·안드로이드의 HEIC 사진) → 안내 후 샘플 고양이로 되돌린다
+    function handleUnreadableMedia() {
+      const vidEl = document.getElementById('previewVideoEl');
+      vidEl.onerror = null;
+      vidEl.pause();
+      vidEl.removeAttribute('src');
+      showToast('이 파일은 열 수 없어요. JPG·PNG 사진이나 MP4 영상으로 다시 올려 주세요.');
+      selectSampleCat('cheese');
+    }
+
     // Handle real user file upload (Image or Video <= 10s with trim slider)
     function handleFileUpload(file) {
       if (!file) return;
@@ -1699,6 +1718,7 @@
         state.mediaSource = 'upload_video';
         imgEl.classList.add('hidden');
         vidEl.classList.remove('hidden');
+        vidEl.onerror = () => handleUnreadableMedia();
         vidEl.src = url;
         vidEl.load();
 
@@ -1735,11 +1755,13 @@
         vidEl.classList.add('hidden');
         trimBox.classList.add('hidden');
         imgEl.classList.remove('hidden');
-        imgEl.src = url;
-        document.getElementById('mediaTypeBadge').textContent = '📸 사진 표정·자세 분석 완료';
+        document.getElementById('mediaTypeBadge').textContent = '📸 사진 불러오는 중...';
         imgEl.onload = () => {
+          document.getElementById('mediaTypeBadge').textContent = '📸 사진 표정·자세 분석 완료';
           analyzeMediaElementPixels(imgEl);
         };
+        imgEl.onerror = () => handleUnreadableMedia();
+        imgEl.src = url;
       }
     }
 
@@ -1893,9 +1915,13 @@
           <span class="text-xs sm:text-sm leading-snug flex-1">${opt.text}</span>
         `;
         btn.addEventListener('click', () => {
+          // 빠른 두 번 탭으로 다음 문항이 건너뛰어지지 않게, 넘어가는 동안은 입력을 받지 않는다
+          if (state.advancingQuestion) return;
+          state.advancingQuestion = true;
           state.answers[state.currentQuestionIdx] = idx;
           renderCurrentQuestion();
           setTimeout(() => {
+            state.advancingQuestion = false;
             if (state.currentQuestionIdx < SURVEY_QUESTIONS.length - 1) {
               state.currentQuestionIdx++;
               renderCurrentQuestion();
@@ -2051,16 +2077,26 @@
       const w = targetCanvas.width;
       const h = targetCanvas.height;
 
-      if (state.mediaSource === 'upload_image') {
-        const imgEl = document.getElementById('previewImageEl');
-        ctx.drawImage(imgEl, 0, 0, w, h);
-      } else if (state.mediaSource === 'upload_video') {
-        const vidEl = document.getElementById('previewVideoEl');
-        ctx.drawImage(vidEl, 0, 0, w, h);
-      } else {
-        const sampleKey = state.mediaSource.replace('sample_', '');
-        drawSampleCatOnCanvas(targetCanvas, sampleKey, 12);
+      // 읽지 못한 사진·영상이면 drawImage가 오류를 내 분석 화면에서 멈추므로, 샘플 그림으로 대신한다
+      try {
+        if (state.mediaSource === 'upload_image') {
+          const imgEl = document.getElementById('previewImageEl');
+          if (!imgEl.complete || !imgEl.naturalWidth) throw new Error('image not decoded');
+          ctx.drawImage(imgEl, 0, 0, w, h);
+          return;
+        }
+        if (state.mediaSource === 'upload_video') {
+          const vidEl = document.getElementById('previewVideoEl');
+          if (vidEl.readyState < 2) throw new Error('video not ready');
+          ctx.drawImage(vidEl, 0, 0, w, h);
+          return;
+        }
+      } catch (e) {
+        drawSampleCatOnCanvas(targetCanvas, 'cheese', 12);
+        return;
       }
+      const sampleKey = state.mediaSource.replace('sample_', '');
+      drawSampleCatOnCanvas(targetCanvas, sampleKey, 12);
     }
 
     function startMultimodalAnalysis() {
@@ -2074,8 +2110,13 @@
       const c2 = document.getElementById('checkItem2');
       const c3 = document.getElementById('checkItem3');
 
-      c2.className = 'flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs font-semibold text-slate-400 transition';
-      c3.className = 'flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs font-semibold text-slate-400 transition';
+      // 다시 하기 때 이전 ✓ 표시가 남지 않도록 단계 번호까지 처음 상태로 되돌린다
+      [[c2, '2'], [c3, '3']].forEach(([el, num]) => {
+        el.className = 'flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs font-semibold text-slate-400 transition';
+        const dot = el.querySelector('span');
+        dot.className = 'w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[11px]';
+        dot.textContent = num;
+      });
 
       setTimeout(() => {
         c2.className = 'flex items-center gap-2.5 p-2.5 rounded-xl bg-purple-50/80 border border-purple-200/60 text-xs font-semibold text-slate-700 transition';
@@ -2111,8 +2152,9 @@
         playful: '장난감 산타형'
       };
 
-      document.getElementById('resCatTitleLine').textContent =
-        `${state.catProfile.name} (${res.breed.name} · ${ageLabels[state.catProfile.age]})`;
+      document.getElementById('resCatTitleLine').textContent = res.isPreview
+        ? `📖 유형 도감 미리보기 · ${res.mbtiCode}`
+        : `${state.catProfile.name} (${res.breed.name} · ${ageLabels[state.catProfile.age]})`;
       document.getElementById('resMbtiPill').textContent = res.mbtiCode;
       document.getElementById('resNicknameBadge').textContent = res.typeInfo.nickname;
       document.getElementById('resMainHeadline').textContent = res.typeInfo.quote;
@@ -2128,8 +2170,9 @@
         .join('');
 
       // Multimodal explanation
-      document.getElementById('resMultimodalSummary').textContent =
-        `미디어에서 추출한 활동성(${state.visualMetrics.motion}%)·집중도(${state.visualMetrics.focus}%), ${res.breed.name}의 선천적 기질, 그리고 집사님(${res.butlerCode})과의 일상 상호작용 패턴을 종합해 ${res.mbtiCode}(${res.typeInfo.nickname}) 유형으로 판정되었어요.`;
+      document.getElementById('resMultimodalSummary').textContent = res.isPreview
+        ? `📖 유형 도감 미리보기예요. ${res.mbtiCode}(${res.typeInfo.nickname}) 유형의 예시 결과이며, 내 고양이의 실제 결과는 테스트를 끝까지 진행하면 볼 수 있어요.`
+        : `미디어에서 추출한 활동성(${state.visualMetrics.motion}%)·집중도(${state.visualMetrics.focus}%), ${res.breed.name}의 선천적 기질, 그리고 집사님(${res.butlerCode})과의 일상 상호작용 패턴을 종합해 ${res.mbtiCode}(${res.typeInfo.nickname}) 유형으로 판정되었어요.`;
 
       // 4-Axis Progress Bars
       const barsContainer = document.getElementById('resAxisBarsContainer');
@@ -2175,7 +2218,8 @@
       // Populate Eye Health Screening
       const m = state.visualMetrics;
       const eyeScore = m.eyeScore || 92;
-      document.getElementById('resEyeScorePill').textContent = `맑음 ${eyeScore}점`;
+      const eyeLabel = eyeScore >= 88 ? '맑음' : (eyeScore >= 78 ? '관찰' : '케어 권장');
+      document.getElementById('resEyeScorePill').textContent = `${eyeLabel} ${eyeScore}점`;
       document.getElementById('resEyeMetricsText').textContent =
         `투명도 ${m.eyeClarity || 94}% · 충혈안전 ${m.eyeRednessSafe || 92}% · 눈물청결 ${m.eyeTearClean || 90}%`;
       document.getElementById('resEyeAdviceText').textContent =
@@ -2218,6 +2262,22 @@
       c.height = 960;
       const ctx = c.getContext('2d');
 
+      // 긴 문장이 카드 밖으로 잘리지 않게: 글자 크기를 줄이고, 그래도 길면 말줄임표
+      const fitText = (text, x, y, maxW, weight, size, minSize) => {
+        let px = size;
+        ctx.font = `${weight} ${px}px Pretendard, sans-serif`;
+        while (ctx.measureText(text).width > maxW && px > minSize) {
+          px--;
+          ctx.font = `${weight} ${px}px Pretendard, sans-serif`;
+        }
+        let t = text;
+        if (ctx.measureText(t).width > maxW) {
+          while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+          t += '…';
+        }
+        ctx.fillText(t, x, y);
+      };
+
       // Pastel Background
       const bgGrad = ctx.createLinearGradient(0, 0, 720, 960);
       bgGrad.addColorStop(0, '#FFF5F7');
@@ -2247,8 +2307,7 @@
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 20px Pretendard, sans-serif';
       ctx.fillText('MEOW-BTI OFFICIAL ID CARD · 냥BTI 연구소', 76, 86);
-      ctx.font = 'bold 30px Pretendard, sans-serif';
-      ctx.fillText(`${state.catProfile.name} (${res.breed.name})`, 76, 126);
+      fitText(`${state.catProfile.name} (${res.breed.name})`, 76, 126, 568, 'bold', 30, 20);
 
       // Draw Avatar Thumbnail
       const avatarCanvas = document.getElementById('resultAvatarCanvas');
@@ -2265,12 +2324,10 @@
       ctx.fillText(res.mbtiCode, 276, 240);
 
       ctx.fillStyle = '#334155';
-      ctx.font = 'bold 26px Pretendard, sans-serif';
-      ctx.fillText(res.typeInfo.nickname, 276, 282);
+      fitText(res.typeInfo.nickname, 276, 282, 368, 'bold', 26, 18);
 
       ctx.fillStyle = '#64748B';
-      ctx.font = '500 18px Pretendard, sans-serif';
-      ctx.fillText(res.typeInfo.tags.join('  '), 276, 320);
+      fitText(res.typeInfo.tags.join('  '), 276, 320, 368, '500', 18, 13);
 
       // Quote Box
       ctx.fillStyle = '#FFF1F2';
@@ -2278,8 +2335,7 @@
       ctx.roundRect(76, 385, 568, 74, 20);
       ctx.fill();
       ctx.fillStyle = '#9F1239';
-      ctx.font = 'bold 20px Pretendard, sans-serif';
-      ctx.fillText(res.typeInfo.quote, 98, 430);
+      fitText(res.typeInfo.quote, 98, 430, 524, 'bold', 20, 14);
 
       // 4 Axes Bars
       let yOffset = 505;
@@ -2309,11 +2365,9 @@
       ctx.fill();
 
       ctx.fillStyle = '#6B21A8';
-      ctx.font = 'bold 22px Pretendard, sans-serif';
-      ctx.fillText(`💞 집사(${res.butlerCode}) × ${state.catProfile.name}(${res.mbtiCode}) 케미 지수: ${res.chemScore}점 (${res.chemTag})`, 98, 828);
+      fitText(`💞 집사(${res.butlerCode}) × ${state.catProfile.name}(${res.mbtiCode}) 케미 ${res.chemScore}점 · ${res.chemTag}`, 98, 828, 524, 'bold', 22, 15);
       ctx.fillStyle = '#475569';
-      ctx.font = '500 17px Pretendard, sans-serif';
-      ctx.fillText(`맞춤 처방: ${res.typeInfo.playTip.slice(0, 38)}...`, 98, 860);
+      fitText(`맞춤 처방: ${res.typeInfo.playTip}`, 98, 860, 524, '500', 17, 15);
 
       // Trigger PNG download
       const link = document.createElement('a');
@@ -2385,6 +2439,9 @@
         }
       });
       updateStepProgressUI();
+      if (stepNum === 1 && state.mediaSource && state.mediaSource.startsWith('sample_')) {
+        startSampleAnimation(state.mediaSource.replace('sample_', ''));
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2422,9 +2479,15 @@
         `;
         card.addEventListener('click', () => {
           // Preview this type directly in Step 5
+          // 도감 미리보기: 성향 막대를 고른 유형에 맞추고, 내 고양이 결과가 아니라는 표시를 붙인다
           const baseRes = computeMultimodalMbtiResult();
           baseRes.mbtiCode = code;
           baseRes.typeInfo = info;
+          baseRes.isPreview = true;
+          baseRes.axes = baseRes.axes.map((ax, i) => {
+            const leftWins = code[i] === ax.leftCode;
+            return { ...ax, leftVal: leftWins ? 70 : 30, rightVal: leftWins ? 30 : 70 };
+          });
           state.finalResult = baseRes;
           renderFinalResultView();
           closeEncyclopedia();
@@ -2477,7 +2540,8 @@
       const fileInput = document.getElementById('mediaFileInput');
 
       dropzone.addEventListener('click', (e) => {
-        if (e.target.id === 'videoTrimSlider') return;
+        // 트림 슬라이더·눈 사진 버튼·파일 입력 자체의 클릭은 사진 선택 창을 다시 열지 않는다
+        if (e.target.closest('#videoTrimSlider, #btnUploadEyePhoto, #eyeFileInput, #mediaFileInput')) return;
         fileInput.click();
       });
 
@@ -2485,6 +2549,7 @@
         if (e.target.files && e.target.files[0]) {
           handleFileUpload(e.target.files[0]);
         }
+        e.target.value = ''; // 같은 파일을 다시 골라도 반응하도록
       });
 
       dropzone.addEventListener('dragover', (e) => {
@@ -2572,7 +2637,7 @@
       // Step 2 -> Step 3
       document.getElementById('btnStep2Next').addEventListener('click', () => {
         const rawName = document.getElementById('inputCatName').value.trim();
-        state.catProfile.name = rawName || '치즈';
+        state.catProfile.name = rawName || '우리 냥이';
         state.currentQuestionIdx = 0;
         renderCurrentQuestion();
         goToStep(3);
@@ -2624,8 +2689,10 @@
               updateMetricsReadout();
               showToast('눈(Eye) 클로즈업 사진 정밀 스크리닝이 반영되었어요! 👁️');
             };
+            eyeImg.onerror = () => showToast('이 사진은 열 수 없어요. JPG·PNG 사진으로 다시 올려 주세요.');
             eyeImg.src = URL.createObjectURL(e.target.files[0]);
           }
+          e.target.value = '';
         });
       }
 
@@ -2672,6 +2739,7 @@
       document.getElementById('btnRestartTest').addEventListener('click', () => {
         state.answers = new Array(8).fill(null);
         state.currentQuestionIdx = 0;
+        state.advancingQuestion = false;
         goToStep(1);
       });
     });
