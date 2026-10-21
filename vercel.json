@@ -1,9 +1,15 @@
 {
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/",
       "has": [{ "type": "host", "value": "cat-mbti-lab.vercel.app" }],
-      "destination": "https://mcti.kr/:path*",
+      "destination": "https://mcti.kr/",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [{ "type": "host", "value": "cat-mbti-lab.vercel.app" }],
+      "destination": "https://mcti.kr/:path+",
       "permanent": true
     }
   ]
