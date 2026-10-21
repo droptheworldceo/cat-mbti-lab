@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>냥BTI 연구소 — 내 고양이 멀티모달 MBTI 테스트</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐱</text></svg>" />
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -243,8 +244,8 @@
 
           <!-- Upload Dropzone -->
           <div id="mediaDropzone" class="relative rounded-2xl border-2 border-dashed border-rose-300 bg-gradient-to-b from-rose-50/70 to-purple-50/40 p-4 sm:p-5 transition hover:border-rose-400 hover:bg-rose-50/90 cursor-pointer">
-            <input id="mediaFileInput" type="file" accept="image/*,video/*" class="hidden" />
-            <input id="eyeFileInput" type="file" accept="image/*" class="hidden" />
+            <input id="mediaFileInput" name="media" aria-label="고양이 사진 또는 영상 올리기" type="file" accept="image/*,video/*" class="hidden" />
+            <input id="eyeFileInput" name="eyePhoto" aria-label="고양이 눈 확대 사진 올리기" type="file" accept="image/*" class="hidden" />
 
             <!-- Empty Upload Prompt -->
             <div id="uploadEmptyState" class="flex flex-col items-center justify-center py-2">
@@ -283,7 +284,7 @@
                   </span>
                   <span id="videoTrimRangeText" class="text-rose-600 font-mono">0.0s ~ 10.0s</span>
                 </div>
-                <input id="videoTrimSlider" type="range" min="0" max="10" step="0.5" value="0" class="w-full h-1.5 bg-amber-200 rounded-lg cursor-pointer" />
+                <input id="videoTrimSlider" name="videoTrimStart" aria-label="영상 분석 시작 지점" type="range" min="0" max="10" step="0.5" value="0" class="w-full h-1.5 bg-amber-200 rounded-lg cursor-pointer" />
                 <p class="text-[11px] text-amber-700 mt-1">10초 이내 핵심 행동 구간만 쏙 뽑아 활동 에너지와 꼬리 반응을 측정해요.</p>
               </div>
 
@@ -408,7 +409,7 @@
             <!-- 2. Cat Breed Selection -->
             <div class="pt-2">
               <div class="flex items-center justify-between mb-1.5">
-                <label class="text-xs font-bold text-slate-700">2. 고양이 묘종 선택 (선천적 기질 반영)</label>
+                <span class="text-xs font-bold text-slate-700">2. 고양이 묘종 선택 (선천적 기질 반영)</span>
                 <span id="aiSuggestedBreedTag" class="text-[11px] text-rose-500 font-semibold">✨ 미디어 추천: 코리안숏헤어</span>
               </div>
               <div id="breedGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
@@ -426,7 +427,7 @@
             <!-- 3. Butler MBTI & Care Style -->
             <div class="pt-2 border-t border-rose-100">
               <div class="flex items-center justify-between mb-1.5">
-                <label class="text-xs font-bold text-slate-700">3. 집사님의 MBTI & 양육 스타일</label>
+                <span class="text-xs font-bold text-slate-700">3. 집사님의 MBTI & 양육 스타일</span>
                 <span id="butlerMbtiDisplay" class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-extrabold">집사: INFP</span>
               </div>
               <p class="text-[11px] text-slate-500 mb-2">집사님의 성향에 따라 고양이의 애착 반응이 달라져요! 각 알파벳을 터치해 주세요.</p>
@@ -452,7 +453,7 @@
               </div>
 
               <!-- Butler Care Style Chips -->
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">평소 고양이를 대하는 집사님의 스타일은?</label>
+              <span class="block text-xs font-bold text-slate-700 mb-1.5">평소 고양이를 대하는 집사님의 스타일은?</span>
               <div id="butlerStyleGroup" class="grid grid-cols-2 gap-2">
                 <button type="button" data-style="doting" class="butler-style-btn pastel-pill p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-800 text-left">
                   <div class="text-xs font-bold">😍 주접·스킨십 폭발형</div>
@@ -477,7 +478,7 @@
             <div class="pt-3 border-t border-rose-100 space-y-3">
               <div>
                 <div class="flex items-center justify-between mb-1.5">
-                  <label class="text-xs font-bold text-slate-700">4. 선호하는 사료 & 최애 간식 취향</label>
+                  <span class="text-xs font-bold text-slate-700">4. 선호하는 사료 & 최애 간식 취향</span>
                   <span class="text-[11px] font-semibold text-amber-600">🍽️ 미식 성향·S/N·F/T 반영</span>
                 </div>
 
@@ -525,7 +526,7 @@
               <!-- Body Silhouette / Weight Calibration -->
               <div class="pt-2">
                 <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-bold text-slate-700">5. 사진 기반 체형·체중 추측 보정</label>
+                  <span class="text-xs font-bold text-slate-700">5. 사진 기반 체형·체중 추측 보정</span>
                   <span id="step2WeightPreview" class="text-[11px] font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">추정: 4.5 ~ 5.1kg (포근 식빵)</span>
                 </div>
                 <div id="bodyBcsGroup" class="grid grid-cols-4 gap-1.5">
