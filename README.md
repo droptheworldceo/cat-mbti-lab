@@ -11,8 +11,7 @@ cat-mbti-lab/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml              # GitHub Actions Supabase 자동 배포 워크플로우
-├── public/
-│   └── index.html                  # 냥BTI 모바일 웹앱 프론트엔드 (파스텔 일러스트 테마)
+├── index.html                      # 냥BTI 모바일 웹앱 프론트엔드 (Vite 입력 파일, 화면 전체)
 ├── src/
 │   ├── lib/
 │   │   └── supabaseClient.ts       # Supabase 클라이언트 SDK 설정 및 TypeScript 인터페이스
