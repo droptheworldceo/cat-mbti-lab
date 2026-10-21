@@ -1,8 +1,9 @@
 name: Deploy Cat MBTI Lab to Supabase & Vercel
 
+# 2026-10-22: push 자동 실행 끔. 필요한 비밀값(SUPABASE_PROJECT_ID·SUPABASE_ACCESS_TOKEN)이 없어 매번 실패했고,
+# 분석 함수는 꺼 둔 상태. 쓸 때는 비밀값을 등록하고 Actions에서 수동 실행(Run workflow).
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy-supabase:

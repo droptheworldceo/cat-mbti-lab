@@ -61,7 +61,7 @@ cat-mbti-lab/
    git push -u origin main
    ```
 2. [Vercel](https://vercel.com)에 로그인하고 해당 GitHub 레포지토리를 **Import**합니다.
-3. 환경변수에 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 넣고 **Deploy**를 누르면 상용 웹앱 서비스가 즉시 오픈됩니다!
+3. 환경변수에 `VITE_SUPABASE_URL`과 `VITE_SUPABASE_ANON_KEY`를 넣고 **Deploy**를 누르면 상용 웹앱 서비스가 즉시 오픈됩니다!
 
 ---
 
