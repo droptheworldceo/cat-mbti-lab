@@ -6,6 +6,12 @@
   <title>MCTI 냥BTI 연구소 — 내 고양이 성향 유형 테스트 (My Cat's Type Indicator)</title>
   <meta name="description" content="MCTI(My Cat's Type Indicator) — 사진·행동 설문·묘종으로 보는 우리 고양이 성향 유형과 집사 케미 테스트. by teamSKY" />
   <link rel="canonical" href="https://mcti.kr/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="MCTI 냥BTI 연구소" />
+  <meta property="og:title" content="MCTI 냥BTI 연구소 — 우리 고양이는 어떤 유형일까?" />
+  <meta property="og:description" content="사진·행동 설문·묘종으로 보는 고양이 성향 유형과 집사 케미 테스트 (My Cat's Type Indicator)" />
+  <meta property="og:url" content="https://mcti.kr/" />
+  <meta name="twitter:card" content="summary" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐱</text></svg>" />
   <link rel="stylesheet" href="/src/style.css" />
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
@@ -633,6 +639,12 @@
            ========================================== -->
       <section id="viewStep5" class="hidden flex-1 flex-col gap-4">
 
+        <!-- 공유 링크로 들어온 사람에게만 보이는 안내 -->
+        <div id="sharedResultBanner" class="hidden rounded-2xl border border-purple-200 bg-purple-50/90 px-4 py-3 items-center justify-between gap-3">
+          <span class="text-xs sm:text-sm font-bold text-purple-800">🔗 공유받은 MCTI 결과예요</span>
+          <button id="btnTryMine" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition">우리 고양이도 해보기</button>
+        </div>
+
         <!-- Printable / Shareable Pastel ID Card -->
         <div id="resultCardContainer" class="pastel-card rounded-3xl overflow-hidden border-2 border-rose-200/90">
           <!-- Top Ribbon Banner -->
@@ -797,7 +809,7 @@
           </button>
           <button id="btnShareResult" type="button" class="py-3 px-4 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition">
             <i data-lucide="share-2" class="w-4 h-4"></i>
-            <span>결과 리포트 복사</span>
+            <span>결과 공유하기</span>
           </button>
         </div>
 
@@ -2042,10 +2054,24 @@
 
       // Calculate Butler & Cat Compatibility
       const butlerCode = state.butler.mbti.join('');
+      const chem = chemistryFor(mbtiCode, butlerCode);
+
+      return {
+        mbtiCode,
+        typeInfo: chem.typeInfo,
+        breed,
+        butlerCode,
+        chemScore: chem.chemScore,
+        chemTag: chem.chemTag,
+        axes: buildAxes(pctE, pctN, pctF, pctP)
+      };
+    }
+
+    // 집사·고양이 케미 (테스트 결과와 공유 링크 복원이 같은 규칙을 쓴다)
+    function chemistryFor(mbtiCode, butlerCode) {
+      const typeInfo = CAT_MBTI_TYPES[mbtiCode] || CAT_MBTI_TYPES.ENFP;
       let chemScore = 86;
       let chemTag = '환상의 케미 단짝';
-
-      const typeInfo = CAT_MBTI_TYPES[mbtiCode] || CAT_MBTI_TYPES.ENFP;
       if (typeInfo.bestMatch.includes(butlerCode)) {
         chemScore = 97;
         chemTag = '운명적 소울메이트';
@@ -2056,21 +2082,105 @@
         chemScore = 90;
         chemTag = '상호보완 힐링콤비';
       }
+      return { typeInfo, chemScore, chemTag };
+    }
 
-      return {
-        mbtiCode,
-        typeInfo,
-        breed,
-        butlerCode,
-        chemScore,
-        chemTag,
-        axes: [
-          { leftCode: 'E', leftLabel: '외향 활력', leftVal: pctE, rightCode: 'I', rightLabel: '내향 독립', rightVal: pctI, color: 'bg-rose-400' },
-          { leftCode: 'N', leftLabel: '직관 탐험', leftVal: pctN, rightCode: 'S', rightLabel: '감각 안정', rightVal: pctS, color: 'bg-purple-400' },
-          { leftCode: 'F', leftLabel: '감정 애교', leftVal: pctF, rightCode: 'T', rightLabel: '사고 시크', rightVal: pctT, color: 'bg-pink-400' },
-          { leftCode: 'P', leftLabel: '자유 즉흥', leftVal: pctP, rightCode: 'J', rightLabel: '규칙 루틴', rightVal: pctJ, color: 'bg-teal-400' }
-        ]
+    // 4축 막대 (왼쪽 값만 받으면 오른쪽은 100에서 뺀 값)
+    function buildAxes(pctE, pctN, pctF, pctP) {
+      return [
+        { leftCode: 'E', leftLabel: '외향 활력', leftVal: pctE, rightCode: 'I', rightLabel: '내향 독립', rightVal: 100 - pctE, color: 'bg-rose-400' },
+        { leftCode: 'N', leftLabel: '직관 탐험', leftVal: pctN, rightCode: 'S', rightLabel: '감각 안정', rightVal: 100 - pctN, color: 'bg-purple-400' },
+        { leftCode: 'F', leftLabel: '감정 애교', leftVal: pctF, rightCode: 'T', rightLabel: '사고 시크', rightVal: 100 - pctF, color: 'bg-pink-400' },
+        { leftCode: 'P', leftLabel: '자유 즉흥', leftVal: pctP, rightCode: 'J', rightLabel: '규칙 루틴', rightVal: 100 - pctP, color: 'bg-teal-400' }
+      ];
+    }
+
+    // =========================================================
+    // 결과 공유 링크 — 결과를 주소에 담는다(서버·DB·로그인 없음)
+    // =========================================================
+    const SHARE_BASE = 'https://mcti.kr/';
+
+    function buildShareUrl() {
+      const res = state.finalResult;
+      if (!res || res.isPreview) return SHARE_BASE;
+      const m = state.visualMetrics;
+      const p = new URLSearchParams({
+        r: '1',
+        n: (state.catProfile.name || '').slice(0, 20),
+        b: state.catProfile.breedId,
+        a: state.catProfile.age,
+        x: res.axes.map(ax => ax.leftVal).join('.'),
+        u: res.butlerCode,
+        s: state.butler.style,
+        f: state.catProfile.foodPref,
+        t: state.catProfile.treatPref,
+        w: state.catProfile.bcsType,
+        mo: String(m.motion),
+        fo: String(m.focus),
+        e: String(m.eyeScore || 92)
+      });
+      return SHARE_BASE + '?' + p.toString();
+    }
+
+    // 주소의 값은 남이 바꿀 수 있으므로 허용 목록·범위로 모두 걸러서 쓴다
+    function loadSharedResultFromUrl() {
+      let q;
+      try { q = new URLSearchParams(location.search); } catch (e) { return false; }
+      if (q.get('r') !== '1') return false;
+
+      const pick = (v, allowed, def) => (allowed.includes(v) ? v : def);
+      const num = (v, lo, hi, def) => { const x = parseInt(v, 10); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : def; };
+
+      const x = (q.get('x') || '').split('.').map(v => parseInt(v, 10));
+      if (x.length !== 4 || x.some(v => !Number.isFinite(v) || v < 0 || v > 100)) return false;
+      const butler = (q.get('u') || '').toUpperCase();
+      if (!/^[EI][NS][FT][PJ]$/.test(butler)) return false;
+
+      // 유형은 막대 값에서 다시 계산 → 주소를 고쳐도 유형과 막대가 어긋나지 않는다
+      const mbtiCode = (x[0] >= 50 ? 'E' : 'I') + (x[1] >= 50 ? 'N' : 'S') + (x[2] >= 50 ? 'F' : 'T') + (x[3] >= 50 ? 'P' : 'J');
+
+      const breedId = pick(q.get('b'), CAT_BREEDS.map(b => b.id), 'ksh');
+      state.catProfile.name = (q.get('n') || '').trim().slice(0, 20) || '우리 냥이';
+      state.catProfile.breedId = breedId;
+      state.catProfile.age = pick(q.get('a'), ['kitten', 'adult', 'senior'], 'adult');
+      state.catProfile.foodPref = pick(q.get('f'), ['dry', 'wet', 'topping', 'all'], 'dry');
+      state.catProfile.treatPref = pick(q.get('t'), ['churu', 'freeze', 'crunchy', 'catnip'], 'churu');
+      state.catProfile.bcsType = pick(q.get('w'), ['slim', 'ideal', 'chubby', 'chonky'], 'ideal');
+      state.butler.mbti = butler.split('');
+      state.butler.style = pick(q.get('s'), ['doting', 'respect', 'routine', 'playful'], 'routine');
+      state.visualMetrics = {
+        ...state.visualMetrics,
+        motion: num(q.get('mo'), 0, 100, 70),
+        focus: num(q.get('fo'), 0, 100, 80),
+        eyeScore: num(q.get('e'), 0, 100, 92),
+        hasCustomEyePhoto: false
       };
+      // 공유받은 쪽엔 사진이 없으니 묘종에 맞는 샘플 그림을 쓴다
+      state.mediaSource = 'sample_' + ({ ragdoll: 'seol', russian: 'mocha' }[breedId] || 'cheese');
+
+      const chem = chemistryFor(mbtiCode, butler);
+      state.finalResult = {
+        mbtiCode,
+        typeInfo: chem.typeInfo,
+        breed: CAT_BREEDS.find(b => b.id === breedId) || CAT_BREEDS[0],
+        butlerCode: butler,
+        chemScore: chem.chemScore,
+        chemTag: chem.chemTag,
+        axes: buildAxes(x[0], x[1], x[2], x[3]),
+        isShared: true
+      };
+      renderFinalResultView();
+      goToStep(5);
+      return true;
+    }
+
+    // 공유받은 결과 화면에서 새 테스트로 넘어갈 때 주소의 결과 값을 지운다
+    function clearSharedResult() {
+      if (location.search) {
+        try { history.replaceState(null, '', location.pathname); } catch (e) { /* 무시 */ }
+      }
+      document.getElementById('sharedResultBanner').classList.add('hidden');
+      document.getElementById('sharedResultBanner').classList.remove('flex');
     }
 
     // Draw thumbnail on Step 4 & Step 5 canvases
@@ -2146,6 +2256,10 @@
     function renderFinalResultView() {
       const res = state.finalResult;
       if (!res) return;
+
+      const sharedBanner = document.getElementById('sharedResultBanner');
+      sharedBanner.classList.toggle('hidden', !res.isShared);
+      sharedBanner.classList.toggle('flex', !!res.isShared);
 
       const ageLabels = { kitten: '아기냥', adult: '청년냥', senior: '성숙냥' };
       const styleLabels = {
@@ -2381,9 +2495,10 @@
       showToast('고화질 MCTI 결과 카드가 저장되었어요! 📸');
     }
 
-    function copyResultSummaryToClipboard() {
+    async function copyResultSummaryToClipboard() {
       const res = state.finalResult;
       if (!res) return;
+      const shareUrl = buildShareUrl();
       const summaryText =
         `[MCTI 냥BTI 연구소 결과 리포트 🐾]\n` +
         `• 고양이: ${state.catProfile.name} (${res.breed.name})\n` +
@@ -2391,7 +2506,17 @@
         `• 한줄 속마음: ${res.typeInfo.quote}\n` +
         `• 집사(${res.butlerCode})와의 케미: ${res.chemScore}점 (${res.chemTag})\n` +
         `• 사냥놀이 처방: ${res.typeInfo.playTip}\n` +
-        `👉 우리 고양이도 해보기: https://mcti.kr`;
+        `👉 결과 보기 · 우리 고양이도 해보기: ${shareUrl}`;
+
+      // 휴대폰(카톡·인스타 등)에선 기기 공유 창을 먼저 연다. 닫으면 아무것도 안 함
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'MCTI 냥BTI 연구소', text: summaryText, url: shareUrl });
+          return;
+        } catch (e) {
+          if (e && e.name === 'AbortError') return;
+        }
+      }
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(summaryText).then(() => {
@@ -2740,12 +2865,21 @@
       // Step 5 Actions
       document.getElementById('btnDownloadCard').addEventListener('click', downloadResultCardImage);
       document.getElementById('btnShareResult').addEventListener('click', copyResultSummaryToClipboard);
+      document.getElementById('btnTryMine').addEventListener('click', () => {
+        document.getElementById('btnRestartTest').click();
+        selectSampleCat('cheese'); // 친구 고양이 정보 대신 기본 샘플로 새로 시작
+      });
       document.getElementById('btnRestartTest').addEventListener('click', () => {
+        clearSharedResult();
+        state.finalResult = null;
         state.answers = new Array(8).fill(null);
         state.currentQuestionIdx = 0;
         state.advancingQuestion = false;
         goToStep(1);
       });
+
+      // 공유 링크(?r=1…)로 들어왔으면 바로 그 결과 화면을 보여 준다
+      loadSharedResultFromUrl();
     });
 
     function syncBcsChipsUI() {
