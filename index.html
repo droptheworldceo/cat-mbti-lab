@@ -2511,7 +2511,7 @@
       // 휴대폰(카톡·인스타 등)에선 기기 공유 창을 먼저 연다. 닫으면 아무것도 안 함
       if (navigator.share) {
         try {
-          await navigator.share({ title: 'MCTI 냥BTI 연구소', text: summaryText, url: shareUrl });
+          await navigator.share({ text: summaryText }); // 제목·url을 따로 주면 앱이 앞뒤에 덧붙여 겹친다(본문에 링크 포함)
           return;
         } catch (e) {
           if (e && e.name === 'AbortError') return;
