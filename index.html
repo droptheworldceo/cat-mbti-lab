@@ -1268,7 +1268,7 @@
         treatPref: 'churu' // churu, freeze, crunchy, catnip
       },
       butler: {
-        mbti: ['E', 'N', 'T', 'J'],
+        mbti: [null, null, null, null], // 집사가 직접 고르기 전엔 비워 둔다(기본값이 케미 결과를 왜곡)
         style: 'routine' // doting, respect, routine, playful
       },
       currentQuestionIdx: 0,
@@ -1813,9 +1813,17 @@
       document.getElementById('breedTraitDesc').textContent = currentBreed.desc;
     }
 
+    function isButlerMbtiComplete() {
+      return state.butler.mbti.every(v => typeof v === 'string' && v.length === 1);
+    }
+
     function updateButlerMbtiUI() {
-      const mbtiStr = state.butler.mbti.join('');
-      document.getElementById('butlerMbtiDisplay').textContent = `집사: ${mbtiStr}`;
+      const mbtiStr = state.butler.mbti.map(v => v || '?').join('');
+      const display = document.getElementById('butlerMbtiDisplay');
+      display.textContent = `집사: ${mbtiStr}`; // 빈칸은 ?, 다 고르기 전엔 노란색
+      display.className = isButlerMbtiComplete()
+        ? 'px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-extrabold whitespace-nowrap'
+        : 'px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-extrabold whitespace-nowrap';
 
       document.querySelectorAll('.butler-axis-btn').forEach(btn => {
         const axisIdx = parseInt(btn.dataset.axis, 10);
@@ -2053,7 +2061,7 @@
         (pctP >= pctJ ? 'P' : 'J');
 
       // Calculate Butler & Cat Compatibility
-      const butlerCode = state.butler.mbti.join('');
+      const butlerCode = isButlerMbtiComplete() ? state.butler.mbti.join('') : '';
       const chem = chemistryFor(mbtiCode, butlerCode);
 
       return {
@@ -2070,6 +2078,9 @@
     // 집사·고양이 케미 (테스트 결과와 공유 링크 복원이 같은 규칙을 쓴다)
     function chemistryFor(mbtiCode, butlerCode) {
       const typeInfo = CAT_MBTI_TYPES[mbtiCode] || CAT_MBTI_TYPES.ENFP;
+      if (!/^[EI][NS][FT][PJ]$/.test(butlerCode || '')) {
+        return { typeInfo, chemScore: null, chemTag: '집사 MBTI 미선택' };
+      }
       let chemScore = 86;
       let chemTag = '환상의 케미 단짝';
       if (typeInfo.bestMatch.includes(butlerCode)) {
@@ -2316,12 +2327,14 @@
       document.getElementById('resDeepDescription').textContent = res.typeInfo.desc;
 
       // Butler Compatibility
-      document.getElementById('resChemScoreBadge').textContent = `궁합 ${res.chemScore}점 · ${res.chemTag}`;
+      const hasChem = res.chemScore !== null && res.chemScore !== undefined;
+      document.getElementById('resChemScoreBadge').textContent = hasChem ? `궁합 ${res.chemScore}점 · ${res.chemTag}` : '집사 MBTI를 고르면 케미가 나와요';
       document.getElementById('resChemCatLabel').textContent = `${state.catProfile.name} · ${res.mbtiCode}`;
-      document.getElementById('resChemButlerLabel').textContent = `${res.butlerCode} · ${styleLabels[state.butler.style]}`;
+      document.getElementById('resChemButlerLabel').textContent = `${res.butlerCode || '집사 미선택'} · ${styleLabels[state.butler.style]}`;
 
-      document.getElementById('resChemDesc').textContent =
-        `${res.butlerCode} 성향의 집사님과 ${res.mbtiCode} 성향의 ${state.catProfile.name}는 서로의 에너지 균형을 맞춰주는 든든한 단짝이에요! 환상의 짝꿍 묘종/유형은 [${res.typeInfo.bestMatch}] 성향이랍니다.`;
+      document.getElementById('resChemDesc').textContent = !hasChem
+        ? `테스트에서 집사님의 MBTI를 고르면 ${res.mbtiCode} 성향 고양이와의 케미 점수를 볼 수 있어요. 환상의 짝꿍 유형은 [${res.typeInfo.bestMatch}] 성향이랍니다.`
+        : `${res.butlerCode} 성향의 집사님과 ${res.mbtiCode} 성향의 ${state.catProfile.name}는 서로의 에너지 균형을 맞춰주는 든든한 단짝이에요! 환상의 짝꿍 묘종/유형은 [${res.typeInfo.bestMatch}] 성향이랍니다.`;
 
       document.getElementById('resPlayTip').textContent = res.typeInfo.playTip;
       document.getElementById('resStressTip').textContent = res.typeInfo.stressTip;
@@ -2482,7 +2495,9 @@
       ctx.fill();
 
       ctx.fillStyle = '#6B21A8';
-      fitText(`💞 집사(${res.butlerCode}) × ${state.catProfile.name}(${res.mbtiCode}) 케미 ${res.chemScore}점 · ${res.chemTag}`, 98, 828, 524, 'bold', 22, 15);
+      fitText(res.chemScore == null
+        ? `💞 ${state.catProfile.name}(${res.mbtiCode}) · 환상의 짝꿍 집사 유형 ${res.typeInfo.bestMatch}`
+        : `💞 집사(${res.butlerCode}) × ${state.catProfile.name}(${res.mbtiCode}) 케미 ${res.chemScore}점 · ${res.chemTag}`, 98, 828, 524, 'bold', 22, 15);
       ctx.fillStyle = '#475569';
       fitText(`맞춤 처방: ${res.typeInfo.playTip}`, 98, 860, 524, '500', 17, 15);
 
@@ -2504,7 +2519,7 @@
         `• 고양이: ${state.catProfile.name} (${res.breed.name})\n` +
         `• MCTI 유형: ${res.mbtiCode} - ${res.typeInfo.nickname}\n` +
         `• 한줄 속마음: ${res.typeInfo.quote}\n` +
-        `• 집사(${res.butlerCode})와의 케미: ${res.chemScore}점 (${res.chemTag})\n` +
+        (res.chemScore == null ? '' : `• 집사(${res.butlerCode})와의 케미: ${res.chemScore}점 (${res.chemTag})\n`) +
         `• 사냥놀이 처방: ${res.typeInfo.playTip}\n` +
         `👉 결과 보기 · 우리 고양이도 해보기: ${shareUrl}`;
 
@@ -2765,6 +2780,12 @@
 
       // Step 2 -> Step 3
       document.getElementById('btnStep2Next').addEventListener('click', () => {
+        if (!isButlerMbtiComplete()) {
+          showToast('집사님의 MBTI 4칸을 모두 골라 주세요 🙏');
+          const box = document.getElementById('butlerMbtiDisplay');
+          box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
         const rawName = document.getElementById('inputCatName').value.trim();
         state.catProfile.name = rawName || '우리 냥이';
         state.currentQuestionIdx = 0;
@@ -2868,6 +2889,8 @@
       document.getElementById('btnTryMine').addEventListener('click', () => {
         document.getElementById('btnRestartTest').click();
         selectSampleCat('cheese'); // 친구 고양이 정보 대신 기본 샘플로 새로 시작
+        state.butler.mbti = [null, null, null, null]; // 친구의 집사 MBTI도 비운다
+        updateButlerMbtiUI();
       });
       document.getElementById('btnRestartTest').addEventListener('click', () => {
         clearSharedResult();
