@@ -70,3 +70,20 @@ npm install
 npm run dev
 ```
 브라우저에서 `http://localhost:5173`으로 접속하면 즉시 테스트할 수 있습니다.
+
+---
+
+## 🔍 검색엔진 등록 (2026-10-30 완료)
+
+| 항목 | 구글 서치 콘솔 | 네이버 서치어드바이저 |
+|---|---|---|
+| 등록 사이트 | URL 접두어 `https://mcti.kr/` | `https://mcti.kr` |
+| 소유 확인 | `index.html`의 `google-site-verification` 메타 태그 | `public/naver5a347a648bd73526ae43379a2ed4cc46.html` 파일 |
+| 사이트맵 제출 | `sitemap.xml` — 성공, 발견된 페이지 1 | `https://mcti.kr/sitemap.xml` |
+| 수집 요청 | URL 검사 실시간 테스트 통과 → 색인 생성 요청 | 웹 페이지 수집 요청 · robots.txt 확인 |
+
+- 관련 파일: `public/sitemap.xml`, `public/robots.txt` (#16), 구글 메타 태그 (#17)
+- ⚠️ **소유 확인 메타 태그와 네이버 HTML 파일은 삭제하지 말 것** — 지우면 소유 확인이 풀린다.
+- 사이트가 한 페이지(SPA)라 사이트맵에는 `https://mcti.kr/` 1개만 있다. 결과 공유 링크(`?type=…`)는 canonical로 메인에 묶인다.
+- 페이지를 새로 추가하면 `public/sitemap.xml`에 URL을 넣고 `lastmod`를 갱신한다.
+- 노출 확인: 1~2주 뒤 구글에서 `site:mcti.kr` 검색, 서치 콘솔 **페이지** 메뉴의 "색인 생성됨" 여부 확인.
